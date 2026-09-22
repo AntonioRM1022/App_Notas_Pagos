@@ -17,7 +17,7 @@ Una aplicación integral construida con Flutter para gestionar tus finanzas pers
     *   Accesos rápidos para registro de compras y pagos.
 *   **Espacio Personal Seguro:**
     *   Gestor de contraseñas y notas privadas.
-    *   Sección especial de "Notas de Amor" y próximos eventos.
+    *   Sección especial de "Notas de Amor" y próximos eventos por si eres igual a mi que se te olvida todo o se enojan de no acordarte de fechas importantes
 *   **Persistencia de Datos:**
     *   Almacenamiento local ultrarrápido implementado con **Isar Database**.
 
