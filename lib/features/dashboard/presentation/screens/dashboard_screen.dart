@@ -5,6 +5,9 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/dashboard_providers.dart';
 import '../../../cards_vault/presentation/providers/cards_providers.dart';
+import '../../../loans/presentation/providers/loans_providers.dart';
+import '../../../savings/presentation/providers/savings_providers.dart';
+import '../../../savings/domain/savings_goal.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -25,6 +28,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final upcomingEvents = ref.watch(upcomingEventsProvider);
     final cardSummaries = ref.watch(cardSummariesProvider);
+    final loansSummary = ref.watch(loansSummaryProvider);
+    final savingsGoals = ref.watch(savingsGoalsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -63,6 +68,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ref.invalidate(cardSummariesProvider);
           ref.invalidate(upcomingEventsProvider);
           ref.invalidate(cardsProvider);
+          ref.invalidate(loansSummaryProvider);
+          ref.invalidate(savingsGoalsProvider);
           await Future.delayed(const Duration(milliseconds: 500));
         },
         child: SingleChildScrollView(
@@ -101,7 +108,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               loading: () => const SizedBox(height: 220, child: Center(child: CircularProgressIndicator())),
               error: (e, s) => Text('Error: $e', style: const TextStyle(color: Colors.white)),
             ),
+            const SizedBox(height: 22),
+
+            // Banner de la Meta Italika 280Z
+            _buildDashboardItalikaBanner(context, savingsGoals),
+            const SizedBox(height: 22),
+
+            // Widget de Cuentas Claras / Préstamos
+            _buildDashboardLoansCard(context, loansSummary),
             const SizedBox(height: 25),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _buildSectionTitle(Icons.event_outlined, 'Próximos Eventos'),
@@ -137,15 +153,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: _buildSectionTitle(Icons.bolt, 'Acceso Rápido'),
             ),
             const SizedBox(height: 15),
-            Padding(
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Expanded(child: _buildQuickActionButton(Icons.add_shopping_cart, 'Nueva Compra', const Color(0xFF00E676), () => _showQuickActionModal(context, 'compra'))),
-                  const SizedBox(width: 15),
-                  Expanded(child: _buildQuickActionButton(Icons.payment, 'Pagar Tarjeta', const Color(0xFFE94057), () => _showQuickActionModal(context, 'pago'))),
-                  const SizedBox(width: 15),
-                  Expanded(child: _buildQuickActionButton(Icons.edit_note, 'Nueva Nota', const Color(0xFF00B0FF), () => _showQuickActionNoteModal(context))),
+                  _buildQuickActionButton(Icons.add_shopping_cart, 'Compra', const Color(0xFF00E676), () => _showQuickActionModal(context, 'compra')),
+                  const SizedBox(width: 12),
+                  _buildQuickActionButton(Icons.payment, 'Pagar', const Color(0xFFE94057), () => _showQuickActionModal(context, 'pago')),
+                  const SizedBox(width: 12),
+                  _buildQuickActionButton(Icons.handshake_outlined, 'Prestar', const Color(0xFF00B0FF), () => context.go('/loans')),
+                  const SizedBox(width: 12),
+                  _buildQuickActionButton(Icons.two_wheeler, 'Italika 280Z', const Color(0xFFFFB300), () => context.go('/savings')),
+                  const SizedBox(width: 12),
+                  _buildQuickActionButton(Icons.edit_note, 'Nueva Nota', const Color(0xFFAB47BC), () => _showQuickActionNoteModal(context)),
                 ],
               ),
             ),
@@ -179,7 +200,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+        width: 85,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
           color: const Color(0xFF161F33),
           borderRadius: BorderRadius.circular(16),
@@ -549,6 +571,169 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardItalikaBanner(BuildContext context, AsyncValue<List<SavingsGoal>> savingsGoalsAsync) {
+    final currencyFormatter = NumberFormat.currency(locale: 'es_MX', symbol: '\$');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: savingsGoalsAsync.when(
+        data: (goals) {
+          if (goals.isEmpty) return const SizedBox.shrink();
+          SavingsGoal goal = goals.first;
+          for (final g in goals) {
+            if (g.title.toLowerCase().contains('italika') || g.iconName == 'two_wheeler') {
+              goal = g;
+              break;
+            }
+          }
+          final progress = goal.targetAmount > 0 ? (goal.currentSaved / goal.targetAmount) : 0.0;
+          final percentage = (progress * 100).clamp(0.0, 100.0);
+          final remaining = (goal.targetAmount - goal.currentSaved).clamp(0.0, goal.targetAmount);
+
+          return InkWell(
+            onTap: () => context.go('/savings'),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF161F33), Color(0xFF1C273B)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF00E676).withOpacity(0.4), width: 1.2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00E676).withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.two_wheeler, color: Color(0xFF00E676), size: 20),
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(goal.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                              const Text('Meta de Ahorro', style: TextStyle(color: Color(0xFF8E9BB0), fontSize: 11)),
+                            ],
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00E676).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${percentage.toStringAsFixed(1)}%',
+                          style: const TextStyle(color: Color(0xFF00E676), fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: progress.clamp(0.0, 1.0),
+                      backgroundColor: const Color(0xFF10141D),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00E676)),
+                      minHeight: 8,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Ahorrado: ${currencyFormatter.format(goal.currentSaved)}',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        'Faltan: ${currencyFormatter.format(remaining)}',
+                        style: const TextStyle(color: Color(0xFF8E9BB0), fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
+      ),
+    );
+  }
+
+  Widget _buildDashboardLoansCard(BuildContext context, AsyncValue<LoansSummary> loansSummaryAsync) {
+    final currencyFormatter = NumberFormat.currency(locale: 'es_MX', symbol: '\$');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: loansSummaryAsync.when(
+        data: (summary) {
+          return InkWell(
+            onTap: () => context.go('/loans'),
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161F33),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF2A3650)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00B0FF).withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.handshake_outlined, color: Color(0xFF00B0FF), size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Cuentas Claras & Préstamos', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text('Me deben: ${currencyFormatter.format(summary.totalToReceive)}', style: const TextStyle(color: Color(0xFF00E676), fontSize: 12, fontWeight: FontWeight.w600)),
+                            const SizedBox(width: 12),
+                            Text('Debo: ${currencyFormatter.format(summary.totalToPay)}', style: const TextStyle(color: Color(0xFFE94057), fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, color: Color(0xFF8E9BB0), size: 14),
+                ],
+              ),
+            ),
+          );
+        },
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
       ),
     );
   }

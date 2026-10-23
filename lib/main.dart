@@ -15,6 +15,12 @@ import 'features/important_dates/domain/personal_note.dart';
 import 'features/cards_vault/data/repository/cards_repository.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'features/loans/domain/loan_record.dart';
+import 'features/loans/domain/loan_payment.dart';
+import 'features/savings/domain/savings_goal.dart';
+import 'features/savings/domain/savings_contribution.dart';
+import 'features/savings/domain/budget_profile.dart';
+
 late Isar isar;
 
 void main() async {
@@ -33,6 +39,11 @@ void main() async {
       QuickNoteSchema,
       LoveNoteSchema,
       PersonalNoteSchema,
+      LoanRecordSchema,
+      LoanPaymentSchema,
+      SavingsGoalSchema,
+      SavingsContributionSchema,
+      BudgetProfileSchema,
     ],
     directory: dir.path,
   );

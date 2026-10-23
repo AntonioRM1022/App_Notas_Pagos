@@ -11,6 +11,9 @@ import '../../features/cards_vault/presentation/screens/card_detail_screen.dart'
 import '../../features/cards_vault/domain/credit_card.dart';
 import '../../shared/widgets/main_scaffold.dart';
 
+import '../../features/loans/presentation/screens/loans_screen.dart';
+import '../../features/savings/presentation/screens/savings_screen.dart';
+
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 final GoRouter appRouter = GoRouter(
@@ -57,6 +60,22 @@ final GoRouter appRouter = GoRouter(
                   },
                 ),
               ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/loans',
+              builder: (context, state) => const LoansScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/savings',
+              builder: (context, state) => const SavingsScreen(),
             ),
           ],
         ),

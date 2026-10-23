@@ -9,6 +9,8 @@ import '../../../important_dates/domain/love_note.dart';
 import '../../../important_dates/domain/personal_note.dart';
 import '../../../important_dates/presentation/providers/notes_providers.dart';
 import '../../presentation/providers/dashboard_providers.dart';
+import '../../../loans/presentation/providers/loans_providers.dart';
+import '../../../loans/domain/loan_record.dart';
 
 // Providers specifically for recycle bin items
 final deletedTransactionsProvider = FutureProvider<List<CardTransaction>>((ref) async {
@@ -31,6 +33,11 @@ final deletedPersonalNotesProvider = FutureProvider<List<PersonalNote>>((ref) as
   return repo.getDeletedPersonalNotes();
 });
 
+final deletedLoansProvider = FutureProvider<List<LoanRecord>>((ref) async {
+  final repo = ref.watch(loansRepositoryProvider);
+  return repo.getDeletedLoans();
+});
+
 class RecycleBinScreen extends ConsumerWidget {
   const RecycleBinScreen({super.key});
 
@@ -40,6 +47,7 @@ class RecycleBinScreen extends ConsumerWidget {
     final deletedSubsAsync = ref.watch(deletedSubscriptionsProvider);
     final deletedLoveNotesAsync = ref.watch(deletedLoveNotesProvider);
     final deletedPersonalNotesAsync = ref.watch(deletedPersonalNotesProvider);
+    final deletedLoansAsync = ref.watch(deletedLoansProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -96,6 +104,19 @@ class RecycleBinScreen extends ConsumerWidget {
                 if (notes.isEmpty) return _buildEmptyState('No hay notas personales eliminadas');
                 return Column(
                   children: notes.map((note) => _buildPersonalNoteItem(context, ref, note)).toList(),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => Text('Error: $e', style: const TextStyle(color: Colors.white)),
+            ),
+            const SizedBox(height: 30),
+
+            _buildSectionTitle('Préstamos Eliminados', Icons.handshake_outlined, const Color(0xFF00B0FF)),
+            deletedLoansAsync.when(
+              data: (loans) {
+                if (loans.isEmpty) return _buildEmptyState('No hay préstamos eliminados');
+                return Column(
+                  children: loans.map((loan) => _buildLoanItem(context, ref, loan)).toList(),
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -224,6 +245,27 @@ class RecycleBinScreen extends ConsumerWidget {
         ref.invalidate(deletedPersonalNotesProvider);
         ref.invalidate(personalNotesProvider);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nota personal restaurada')));
+      }
+    );
+  }
+
+  Widget _buildLoanItem(BuildContext context, WidgetRef ref, LoanRecord loan) {
+    final currencyFormatter = NumberFormat.currency(locale: 'es_MX', symbol: '\$');
+    return _buildRestoreRow(
+      ListTile(
+        title: Text(loan.personName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: Text(
+          '${loan.concept} - ${currencyFormatter.format(loan.remainingAmount)} (${DateFormat('dd MMM yyyy', 'es_ES').format(loan.date)})',
+          style: const TextStyle(color: Color(0xFF8E9BB0), fontSize: 12),
+        ),
+      ),
+      () async {
+        final repo = ref.read(loansRepositoryProvider);
+        await repo.restoreLoan(loan.id);
+        ref.invalidate(deletedLoansProvider);
+        ref.invalidate(loansListProvider);
+        ref.invalidate(loansSummaryProvider);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Préstamo restaurado')));
       }
     );
   }

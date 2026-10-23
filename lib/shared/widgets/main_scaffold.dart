@@ -59,7 +59,7 @@ class MainScaffold extends StatelessWidget {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             child: BottomNavigationBar(
               currentIndex: navigationShell.currentIndex,
               onTap: _goBranch,
@@ -71,7 +71,9 @@ class MainScaffold extends StatelessWidget {
               items: [
                 _buildNavItem(Icons.home_outlined, 0),
                 _buildNavItem(Icons.credit_card_outlined, 1),
-                _buildNavItem(Icons.sticky_note_2_outlined, 2),
+                _buildNavItem(Icons.handshake_outlined, 2),
+                _buildNavItem(Icons.savings_outlined, 3),
+                _buildNavItem(Icons.sticky_note_2_outlined, 4),
               ],
             ),
           ),
@@ -85,7 +87,7 @@ class MainScaffold extends StatelessWidget {
     final isSelected = navigationShell.currentIndex == index;
     return BottomNavigationBarItem(
       icon: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(9),
         decoration: isSelected
             ? BoxDecoration(
                 color: const Color(0xFF00E676).withOpacity(0.2), // Teal glow
@@ -94,6 +96,7 @@ class MainScaffold extends StatelessWidget {
             : null,
         child: Icon(
           icon,
+          size: 22,
           color: isSelected ? const Color(0xFF00E676) : const Color(0xFF8E9BB0),
         ),
       ),

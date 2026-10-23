@@ -10,6 +10,11 @@ import '../../features/cards_vault/domain/card_transaction.dart';
 import '../../features/cards_vault/domain/card_subscription.dart';
 import '../../features/important_dates/domain/love_note.dart';
 import '../../features/important_dates/domain/personal_note.dart';
+import '../../features/loans/domain/loan_record.dart';
+import '../../features/loans/domain/loan_payment.dart';
+import '../../features/savings/domain/savings_goal.dart';
+import '../../features/savings/domain/savings_contribution.dart';
+import '../../features/savings/domain/budget_profile.dart';
 
 class BackupService {
   final Isar _isar;
@@ -35,6 +40,22 @@ class BackupService {
       final loveNotes = await _isar.loveNotes.where().exportJson();
       final personalNotes = await _isar.personalNotes.where().exportJson();
 
+      final loans = await _isar.loanRecords.where().exportJson();
+      final loanPayments = await _isar.loanPayments.where().exportJson();
+      final allPayments = await _isar.loanPayments.where().findAll();
+      for (int i = 0; i < loanPayments.length; i++) {
+        loanPayments[i]['loanId'] = allPayments[i].loan.value?.id;
+      }
+
+      final savingsGoals = await _isar.savingsGoals.where().exportJson();
+      final savingsContributions = await _isar.savingsContributions.where().exportJson();
+      final allContribs = await _isar.savingsContributions.where().findAll();
+      for (int i = 0; i < savingsContributions.length; i++) {
+        savingsContributions[i]['goalId'] = allContribs[i].goal.value?.id;
+      }
+
+      final budgetProfiles = await _isar.budgetProfiles.where().exportJson();
+
       final backupData = {
         'version': 1,
         'timestamp': DateTime.now().toIso8601String(),
@@ -43,6 +64,11 @@ class BackupService {
         'cardSubscriptions': subscriptions,
         'loveNotes': loveNotes,
         'personalNotes': personalNotes,
+        'loanRecords': loans,
+        'loanPayments': loanPayments,
+        'savingsGoals': savingsGoals,
+        'savingsContributions': savingsContributions,
+        'budgetProfiles': budgetProfiles,
       };
 
       final jsonString = jsonEncode(backupData);
@@ -70,6 +96,11 @@ class BackupService {
         final subscriptions = List<Map<String, dynamic>>.from(backupData['cardSubscriptions'] ?? []);
         final loveNotes = List<Map<String, dynamic>>.from(backupData['loveNotes'] ?? []);
         final personalNotes = List<Map<String, dynamic>>.from(backupData['personalNotes'] ?? []);
+        final loans = List<Map<String, dynamic>>.from(backupData['loanRecords'] ?? []);
+        final loanPayments = List<Map<String, dynamic>>.from(backupData['loanPayments'] ?? []);
+        final savingsGoals = List<Map<String, dynamic>>.from(backupData['savingsGoals'] ?? []);
+        final savingsContributions = List<Map<String, dynamic>>.from(backupData['savingsContributions'] ?? []);
+        final budgetProfiles = List<Map<String, dynamic>>.from(backupData['budgetProfiles'] ?? []);
 
         await _isar.writeTxn(() async {
           await _isar.clear(); // Clear existing data
@@ -79,6 +110,11 @@ class BackupService {
           await _isar.cardSubscriptions.importJson(subscriptions);
           await _isar.loveNotes.importJson(loveNotes);
           await _isar.personalNotes.importJson(personalNotes);
+          await _isar.loanRecords.importJson(loans);
+          await _isar.loanPayments.importJson(loanPayments);
+          await _isar.savingsGoals.importJson(savingsGoals);
+          await _isar.savingsContributions.importJson(savingsContributions);
+          await _isar.budgetProfiles.importJson(budgetProfiles);
 
           // Restore links
           for (final txJson in transactions) {
@@ -103,6 +139,32 @@ class BackupService {
               if (sub != null && card != null) {
                 sub.card.value = card;
                 await sub.card.save();
+              }
+            }
+          }
+
+          for (final pJson in loanPayments) {
+            final loanId = pJson['loanId'] as int?;
+            if (loanId != null) {
+              final pId = pJson['id'] as int;
+              final payment = await _isar.loanPayments.get(pId);
+              final loan = await _isar.loanRecords.get(loanId);
+              if (payment != null && loan != null) {
+                payment.loan.value = loan;
+                await payment.loan.save();
+              }
+            }
+          }
+
+          for (final cJson in savingsContributions) {
+            final goalId = cJson['goalId'] as int?;
+            if (goalId != null) {
+              final cId = cJson['id'] as int;
+              final contrib = await _isar.savingsContributions.get(cId);
+              final goal = await _isar.savingsGoals.get(goalId);
+              if (contrib != null && goal != null) {
+                contrib.goal.value = goal;
+                await contrib.goal.save();
               }
             }
           }
